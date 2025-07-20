@@ -14,8 +14,7 @@ public class App {
     @Bean
     public CommandLineRunner run(BusinessOrchestrator orchestrator) {
         return args -> {
-            // TODO: Trigger the business orchestration here
-            System.out.println("Worker started. Business logic will be triggered here.");
+            orchestrator.runOrchestration();
         };
     }
 }

@@ -8,7 +8,6 @@ import com.theokanning.openai.service.OpenAiService;
 import com.theokanning.openai.completion.chat.ChatCompletionRequest;
 import com.theokanning.openai.completion.chat.ChatMessage;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -24,10 +23,6 @@ public class LlmService {
     @Autowired
     public LlmService(OpenAiService openAiService) {
         this.openAiService = openAiService;
-    }
-
-    public LlmService(@Value("${openai.api.key}") String apiKey) {
-        this.openAiService = new OpenAiService(apiKey);
     }
 
     public TicketAnalysisResult analyzeTicket(SupportTicket ticket, List<PaymentTransaction> transactions) {
@@ -54,7 +49,7 @@ public class LlmService {
         ChatMessage system = new ChatMessage("system", "You are a helpful support ticket classifier.");
         ChatMessage user = new ChatMessage("user", prompt.toString());
         ChatCompletionRequest req = ChatCompletionRequest.builder()
-                .model("gpt-4-1106-preview")
+                .model("gpt-4o")
                 .messages(List.of(system, user))
                 .maxTokens(256)
                 .temperature(0.0)

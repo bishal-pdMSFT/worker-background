@@ -2,6 +2,8 @@ package ai.supporter.worker;
 
 import ai.supporter.worker.llm.LlmService;
 import ai.supporter.worker.llm.TicketAnalysisResult;
+import ai.supporter.worker.llm.TicketResponseService;
+import ai.supporter.worker.llm.TicketResponse;
 import ai.supporter.worker.payment.PaymentService;
 import ai.supporter.worker.payment.PaymentTransaction;
 import ai.supporter.worker.ticket.SupportTicket;
@@ -18,11 +20,13 @@ public class BusinessOrchestrator {
     private final TicketService ticketService;
     private final PaymentService paymentService;
     private final LlmService llmService;
+    private final TicketResponseService ticketResponseService;
 
-    public BusinessOrchestrator(TicketService ticketService, PaymentService paymentService, LlmService llmService) {
+    public BusinessOrchestrator(TicketService ticketService, PaymentService paymentService, LlmService llmService, TicketResponseService ticketResponseService) {
         this.ticketService = ticketService;
         this.paymentService = paymentService;
         this.llmService = llmService;
+        this.ticketResponseService = ticketResponseService;
     }
 
     public void runOrchestration() {
@@ -36,6 +40,10 @@ public class BusinessOrchestrator {
         for (SupportTicket ticket : sample) {
             TicketAnalysisResult result = llmService.analyzeTicket(ticket, transactions);
             System.out.println(prettyPrintResult(ticket, result));
+            TicketResponse response = ticketResponseService.generateResponse(result, ticket);
+            if (response != null) {
+                System.out.println(prettyPrintTicketResponse(response));
+            }
         }
     }
 
@@ -53,6 +61,21 @@ public class BusinessOrchestrator {
             sb.append("None\n");
         }
         sb.append("-----------------------------\n");
+        return sb.toString();
+    }
+
+    private String prettyPrintTicketResponse(TicketResponse response) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Ticket Response for Ticket ID: ").append(response.getTicketId()).append("\n");
+        sb.append("Updated At: ").append(response.getUpdatedAt()).append("\n");
+        sb.append("Response Comment: ").append(response.getResponseComment()).append("\n");
+        sb.append("All Comments: ");
+        if (response.getComments() != null && !response.getComments().isEmpty()) {
+            sb.append(String.join(" | ", response.getComments())).append("\n");
+        } else {
+            sb.append("None\n");
+        }
+        sb.append("============================\n");
         return sb.toString();
     }
 } 

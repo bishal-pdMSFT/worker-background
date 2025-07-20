@@ -71,6 +71,19 @@ public class LlmService {
         return parseResult(json);
     }
 
+    public String simpleCompletion(String prompt) {
+        ChatMessage system = new ChatMessage("system", "You are a concise assistant. Just tell information without any niceties.");
+        ChatMessage user = new ChatMessage("user", prompt);
+        ChatCompletionRequest req = ChatCompletionRequest.builder()
+                .model("gpt-4o")
+                .messages(List.of(system, user))
+                .maxTokens(128)
+                .temperature(0.2)
+                .build();
+        return openAiService.createChatCompletion(req)
+                .getChoices().get(0).getMessage().getContent();
+    }
+
     private TicketAnalysisResult parseResult(String json) {
         System.out.println("json: " + json);
         TicketAnalysisResult result = new TicketAnalysisResult();

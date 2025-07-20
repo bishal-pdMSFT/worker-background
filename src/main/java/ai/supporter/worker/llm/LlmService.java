@@ -76,10 +76,15 @@ public class LlmService {
                 .getChoices().get(0).getMessage().getContent();
     }
 
-    private TicketAnalysisResult parseResult(String json) {
+    public TicketAnalysisResult parseResult(String json) {
         System.out.println("json: " + json);
         TicketAnalysisResult result = new TicketAnalysisResult();
         try {
+            if (json == null || json.trim().isEmpty()) {
+                result.setTicketClassification("unknown");
+                result.setQuestionClassification("unknown");
+                return result;
+            }
             // Remove code block markers and extract JSON object
             String cleaned = json.trim();
             if (cleaned.startsWith("```")) {

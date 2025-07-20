@@ -25,15 +25,7 @@ public class LlmService {
         this.openAiService = openAiService;
     }
 
-    public TicketAnalysisResult analyzeTicket(SupportTicket ticket, List<PaymentTransaction> transactions) {
-        // Find transactions within 48h of ticket creation
-        Instant ticketTime = ticket.getTicketTimestamp();
-        List<PaymentTransaction> relevantTx = transactions.stream()
-                .filter(tx -> {
-                    Instant txTime = tx.getTransactionTimestamp();
-                    return !txTime.isBefore(ticketTime.minusSeconds(48 * 3600)) && !txTime.isAfter(ticketTime.plusSeconds(48 * 3600));
-                })
-                .collect(Collectors.toList());
+    public TicketAnalysisResult analyzeTicket(SupportTicket ticket) {
         // Improved prompt for GPT-4o (no transaction details)
         StringBuilder prompt = new StringBuilder();
         prompt.append("You are an expert support ticket classifier.\n");

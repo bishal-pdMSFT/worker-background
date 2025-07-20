@@ -8,12 +8,17 @@ import ai.supporter.worker.payment.PaymentService;
 import ai.supporter.worker.payment.PaymentTransaction;
 import ai.supporter.worker.ticket.SupportTicket;
 import ai.supporter.worker.ticket.TicketService;
+import ai.supporter.worker.queue.TicketMessage;
+import ai.supporter.worker.queue.AnalyzedTicketMessage;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 @Service
 public class BusinessOrchestrator {
@@ -30,21 +35,44 @@ public class BusinessOrchestrator {
     }
 
     public void runOrchestration() {
-        List<SupportTicket> openTickets = ticketService.getAllTickets().stream()
-                .filter(t -> t.getStatus() == SupportTicket.Status.OPEN)
-                .collect(Collectors.toList());
-        Collections.shuffle(openTickets, new Random());
-        List<SupportTicket> sample = openTickets.stream().limit(1).collect(Collectors.toList());
-        List<PaymentTransaction> transactions = paymentService.getAllTransactions();
-        System.out.println("\n--- LLM Analysis for 10 Random Open Tickets ---\n");
-        for (SupportTicket ticket : sample) {
-            TicketAnalysisResult result = llmService.analyzeTicket(ticket, transactions);
-            System.out.println(prettyPrintResult(ticket, result));
-            TicketResponse response = ticketResponseService.generateResponse(result, ticket);
-            if (response != null) {
-                System.out.println(prettyPrintTicketResponse(response));
+        LinkedBlockingQueue<TicketMessage> incomingTicketsQueue = new LinkedBlockingQueue<>();
+        LinkedBlockingQueue<AnalyzedTicketMessage> analyzedTicketsQueue = new LinkedBlockingQueue<>();
+        ExecutorService executor = Executors.newFixedThreadPool(3);
+        // Producer: reads open tickets and puts on queue
+        executor.submit(() -> {
+            List<SupportTicket> openTickets = ticketService.getAllTickets().stream()
+                    .filter(t -> t.getStatus() == SupportTicket.Status.OPEN)
+                    .collect(Collectors.toList());
+            for (SupportTicket ticket : openTickets) {
+                try { incomingTicketsQueue.put(new TicketMessage(ticket)); } catch (InterruptedException ignored) {}
             }
-        }
+        });
+        // Analyzer: reads from incomingTicketsQueue, analyzes, puts on analyzedTicketsQueue
+        executor.submit(() -> {
+            while (true) {
+                try {
+                    TicketMessage msg = incomingTicketsQueue.take();
+                    TicketAnalysisResult result = llmService.analyzeTicket(msg.getTicket());
+                    analyzedTicketsQueue.put(new AnalyzedTicketMessage(msg.getTicket(), result));
+                } catch (InterruptedException e) { break; }
+            }
+        });
+        // Responder: reads from analyzedTicketsQueue, generates response, prints
+        executor.submit(() -> {
+            while (true) {
+                try {
+                    AnalyzedTicketMessage msg = analyzedTicketsQueue.take();
+                    System.out.println(prettyPrintResult(msg.getTicket(), msg.getAnalysis()));
+                    TicketResponse response = ticketResponseService.generateResponse(msg.getAnalysis(), msg.getTicket());
+                    if (response != null) {
+                        System.out.println(prettyPrintTicketResponse(response));
+                    }
+                } catch (InterruptedException e) { break; }
+            }
+        });
+        // For demo: let threads run for a while then shutdown
+        try { Thread.sleep(50000); } catch (InterruptedException ignored) {}
+        executor.shutdownNow();
     }
 
     private String prettyPrintResult(SupportTicket ticket, TicketAnalysisResult result) {

@@ -30,7 +30,7 @@ public class BusinessOrchestrator {
                 .filter(t -> t.getStatus() == SupportTicket.Status.OPEN)
                 .collect(Collectors.toList());
         Collections.shuffle(openTickets, new Random());
-        List<SupportTicket> sample = openTickets.stream().limit(10).collect(Collectors.toList());
+        List<SupportTicket> sample = openTickets.stream().limit(1).collect(Collectors.toList());
         List<PaymentTransaction> transactions = paymentService.getAllTransactions();
         System.out.println("\n--- LLM Analysis for 10 Random Open Tickets ---\n");
         for (SupportTicket ticket : sample) {
@@ -46,9 +46,9 @@ public class BusinessOrchestrator {
         sb.append("Description: ").append(ticket.getDescription()).append("\n");
         sb.append("Ticket Classification: ").append(result.getTicketClassification()).append("\n");
         sb.append("Question Classification: ").append(result.getQuestionClassification()).append("\n");
-        sb.append("Relevant Transaction Timestamps: ");
-        if (result.getTransactionTimestamps() != null && !result.getTransactionTimestamps().isEmpty()) {
-            sb.append(result.getTransactionTimestamps()).append("\n");
+        sb.append("Ticket Timestamp: ");
+        if (result.getTicketTimestamp() != null) {
+            sb.append(result.getTicketTimestamp()).append("\n");
         } else {
             sb.append("None\n");
         }

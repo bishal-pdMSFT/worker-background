@@ -34,17 +34,28 @@ public class LlmService {
                     return !txTime.isBefore(ticketTime.minusSeconds(48 * 3600)) && !txTime.isAfter(ticketTime.plusSeconds(48 * 3600));
                 })
                 .collect(Collectors.toList());
-        // Prepare prompt for GPT-4.1
+        // Improved prompt for GPT-4o (no transaction details)
         StringBuilder prompt = new StringBuilder();
-        prompt.append("Support ticket description: \"").append(ticket.getDescription()).append("\"\n");
+        prompt.append("You are an expert support ticket classifier.\n");
+        prompt.append("Given the following support ticket, extract the required fields. Always fill all fields. If information is missing, infer or use 'unknown'. Respond ONLY with a JSON object, and nothing else.\n");
+        prompt.append("\nSupport ticket description: \"").append(ticket.getDescription()).append("\"\n");
         prompt.append("Customer name: ").append(ticket.getCustomerName()).append("\n");
-        prompt.append("Relevant transactions (timestamp, status):\n");
-        for (PaymentTransaction tx : relevantTx) {
-            prompt.append("- ").append(tx.getTransactionTimestamp()).append(", ").append(tx.getStatus()).append("\n");
-        }
+        prompt.append("Ticket created at: ").append(ticket.getTicketTimestamp()).append("\n");
         prompt.append("\nClassify the ticket as 'payment-related' or 'other'.\n");
-        prompt.append("Classify the question as 'status-related' or 'tat-related'.\n");
-        prompt.append("Respond in JSON with fields: clientName, ticketClassification, transactionTimestamps (array), questionClassification.\n");
+        prompt.append("Classify the question as 'status-related' or 'tat-related' or 'other'.\n");
+        prompt.append("\nRespond with a JSON object with the following fields:\n");
+        prompt.append("- clientName: string (the customer name, or 'unknown')\n");
+        prompt.append("- ticketClassification: string ('payment-related' or 'other')\n");
+        prompt.append("- ticketTimestamp: string (ISO8601 timestamp of when the ticket was created)\n");
+        prompt.append("- questionClassification: string ('status-related' or 'tat-related' or 'other')\n");
+        prompt.append("\nExample:\n");
+        prompt.append("{\n");
+        prompt.append("  \"clientName\": \"Acme Corp\",\n");
+        prompt.append("  \"ticketClassification\": \"payment-related\",\n");
+        prompt.append("  \"ticketTimestamp\": \"2024-06-01T12:00:00Z\",\n");
+        prompt.append("  \"questionClassification\": \"status-related\"\n");
+        prompt.append("}\n");
+        prompt.append("\nReturn only the JSON object, with no extra text.\n");
 
         ChatMessage system = new ChatMessage("system", "You are a helpful support ticket classifier.");
         ChatMessage user = new ChatMessage("user", prompt.toString());
@@ -61,20 +72,35 @@ public class LlmService {
     }
 
     private TicketAnalysisResult parseResult(String json) {
+        System.out.println("json: " + json);
         TicketAnalysisResult result = new TicketAnalysisResult();
         try {
-            JsonNode node = objectMapper.readTree(json);
+            // Remove code block markers and extract JSON object
+            String cleaned = json.trim();
+            if (cleaned.startsWith("```")) {
+                cleaned = cleaned.substring(3).trim();
+                if (cleaned.startsWith("json")) {
+                    cleaned = cleaned.substring(4).trim();
+                }
+                int end = cleaned.lastIndexOf("```\n");
+                if (end == -1) end = cleaned.lastIndexOf("```");
+                if (end > 0) cleaned = cleaned.substring(0, end).trim();
+            }
+            // Extract first JSON object if extra text is present
+            int startObj = cleaned.indexOf('{');
+            int endObj = cleaned.lastIndexOf('}');
+            if (startObj >= 0 && endObj > startObj) {
+                cleaned = cleaned.substring(startObj, endObj + 1);
+            }
+            JsonNode node = objectMapper.readTree(cleaned);
             result.setClientName(node.path("clientName").asText(null));
             result.setTicketClassification(node.path("ticketClassification").asText(null));
-            result.setQuestionClassification(node.path("questionClassification").asText(null));
-            List<Instant> timestamps = new ArrayList<>();
-            if (node.has("transactionTimestamps") && node.get("transactionTimestamps").isArray()) {
-                for (JsonNode ts : node.get("transactionTimestamps")) {
-                    try { timestamps.add(Instant.parse(ts.asText())); } catch (Exception ignored) {}
-                }
+            if (node.has("ticketTimestamp")) {
+                try { result.setTicketTimestamp(Instant.parse(node.get("ticketTimestamp").asText())); } catch (Exception ignored) {}
             }
-            result.setTransactionTimestamps(timestamps);
+            result.setQuestionClassification(node.path("questionClassification").asText(null));
         } catch (Exception e) {
+            System.err.println("llm exception: " + e.getMessage());
             result.setTicketClassification("unknown");
             result.setQuestionClassification("unknown");
         }

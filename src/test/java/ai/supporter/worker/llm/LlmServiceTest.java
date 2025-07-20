@@ -60,7 +60,7 @@ class LlmServiceTest {
         // Mock the OpenAI response
         com.theokanning.openai.completion.chat.ChatCompletionChoice choice = new com.theokanning.openai.completion.chat.ChatCompletionChoice();
         com.theokanning.openai.completion.chat.ChatMessage message = new com.theokanning.openai.completion.chat.ChatMessage();
-        message.setContent("{\"clientName\":\"Customer 001\",\"ticketClassification\":\"payment-related\",\"transactionTimestamps\":[\"2025-07-19T15:14:45.318Z\"],\"questionClassification\":\"status-related\"}");
+        message.setContent("{\"clientName\":\"Customer 001\",\"ticketClassification\":\"payment-related\",\"ticketTimestamp\":\"2025-07-19T15:14:45.318Z\",\"questionClassification\":\"status-related\"}");
         choice.setMessage(message);
         com.theokanning.openai.completion.chat.ChatCompletionResult result = new com.theokanning.openai.completion.chat.ChatCompletionResult();
         result.setChoices(List.of(choice));
@@ -69,7 +69,7 @@ class LlmServiceTest {
         TicketAnalysisResult analysis = llmService.analyzeTicket(ticket, transactions);
         assertThat(analysis.getClientName()).isEqualTo("Customer 001");
         assertThat(analysis.getTicketClassification()).isEqualTo("payment-related");
-        assertThat(analysis.getTransactionTimestamps()).isNotEmpty();
+        assertThat(analysis.getTicketTimestamp()).isNotNull();
         assertThat(analysis.getQuestionClassification()).isEqualTo("status-related");
     }
 } 

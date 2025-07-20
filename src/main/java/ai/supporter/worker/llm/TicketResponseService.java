@@ -36,13 +36,18 @@ public class TicketResponseService {
         Instant ticketTime = ticket.getTicketTimestamp();
         String clientName = analysis.getClientName();
         // Find relevant transactions for the same client in last 48h
-        List<PaymentTransaction> relevantTx = paymentService.getAllTransactions().stream()
+        List<PaymentTransaction> relevantTx = new ArrayList<>();
+        try {
+            relevantTx = paymentService.getAllTransactions().stream()
                 .filter(tx -> tx.getCustomerName() != null && tx.getCustomerName().equalsIgnoreCase(clientName))
                 .filter(tx -> {
                     Instant txTime = tx.getTransactionTimestamp();
                     return !txTime.isBefore(ticketTime.minusSeconds(48 * 3600)) && !txTime.isAfter(ticketTime.plusSeconds(48 * 3600));
                 })
                 .collect(Collectors.toList());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         List<String> comments = new ArrayList<>();
         for (PaymentTransaction tx : relevantTx) {
             if (tx.getStatus() == PaymentTransaction.Status.PAID) {

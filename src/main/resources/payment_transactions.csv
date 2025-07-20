@@ -1,4 +1,4 @@
-transactionId,customerId,customerName,sourceAmount,sourceCurrency,destinationAmount,destinationCurrency,paymentMode,paymentGateway,status,expectedTat,transactionTimestamp
+transaction_id,customer_id,customer_name,source_amount,source_currency,destination_amount,destination_currency,payment_mode,payment_gateway,status,expected_tat,transaction_timestamp
 a00d06a0-757d-4b26-879b-81b371208f11,cust007,Customer 007,42.21,INR,40.38,EUR,UPI,Square,SENT_TO_GATEWAY,3 days,2025-07-09T17:11:23.335585
 eed50cc9-d5e2-47ff-9fbf-9b8009424f2c,cust073,Customer 073,530.79,EUR,542.54,USD,UPI,Square,CREATED,1 days,2025-06-28T08:59:45.335585
 889855a2-d7ee-40ff-986c-1246c2388b38,cust067,Customer 067,92.78,USD,93.19,SGD,UPI,Razorpay,FAILED,4 days,2025-06-28T14:32:17.335585

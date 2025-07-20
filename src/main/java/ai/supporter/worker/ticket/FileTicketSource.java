@@ -51,8 +51,9 @@ public class FileTicketSource implements TicketSource {
           ticket.setCustomerName(parts[4]);
           ticket.setLastUpdatedAt(parseTimestamp(parts[5]));
           tickets.add(ticket);
+          System.out.println("Added ticket: " + ticket.getTicketId());
         } catch (Exception e) {
-          // skip malformed line
+          System.out.println("Error parsing ticket: " + e.getMessage());
         }
       }
       reader.close();

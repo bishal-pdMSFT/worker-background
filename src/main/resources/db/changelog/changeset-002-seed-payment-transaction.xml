@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="002-seed-payment-transaction" author="supporter-ai">
+        <loadData tableName="payment_transaction" file="classpath:payment_transactions.csv" separator=",">
+            <column name="transaction_id"/>
+            <column name="customer_id"/>
+            <column name="customer_name"/>
+            <column name="source_amount"/>
+            <column name="source_currency"/>
+            <column name="destination_amount"/>
+            <column name="destination_currency"/>
+            <column name="payment_mode"/>
+            <column name="payment_gateway"/>
+            <column name="status"/>
+            <column name="expected_tat"/>
+            <column name="transaction_timestamp"/>
+        </loadData>
+    </changeSet>
+
+</databaseChangeLog> 

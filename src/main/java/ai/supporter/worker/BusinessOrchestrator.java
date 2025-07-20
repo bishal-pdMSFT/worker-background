@@ -44,7 +44,9 @@ public class BusinessOrchestrator {
                     .filter(t -> t.getStatus() == SupportTicket.Status.OPEN)
                     .collect(Collectors.toList());
             for (SupportTicket ticket : openTickets) {
-                try { incomingTicketsQueue.put(new TicketMessage(ticket)); } catch (InterruptedException ignored) {}
+                try { incomingTicketsQueue.put(new TicketMessage(ticket)); 
+                System.out.println("Queued ticket: " + ticket.getTicketId());
+              } catch (InterruptedException ignored) {}
             }
         });
         // Analyzer: reads from incomingTicketsQueue, analyzes, puts on analyzedTicketsQueue
@@ -52,7 +54,9 @@ public class BusinessOrchestrator {
             while (true) {
                 try {
                     TicketMessage msg = incomingTicketsQueue.take();
+                    System.out.println("Analyzing ticket: " + msg.getTicket().getTicketId());
                     TicketAnalysisResult result = llmService.analyzeTicket(msg.getTicket());
+                    System.out.println("Analyzed ticket: " + msg.getTicket().getTicketId());
                     analyzedTicketsQueue.put(new AnalyzedTicketMessage(msg.getTicket(), result));
                 } catch (InterruptedException e) { break; }
             }
@@ -71,7 +75,7 @@ public class BusinessOrchestrator {
             }
         });
         // For demo: let threads run for a while then shutdown
-        try { Thread.sleep(50000); } catch (InterruptedException ignored) {}
+        try { Thread.sleep(10000); } catch (InterruptedException ignored) {}
         executor.shutdownNow();
     }
 
